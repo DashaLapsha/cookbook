@@ -1,0 +1,10 @@
+Hello {{ user.username }},
+
+Thank you for signing up with Our Website. To complete your registration, please click on the following link:
+
+{{ confirmation_url }}
+
+If you didn't register on Our Website, please ignore this email.
+
+Best regards,
+The Our Website Team
