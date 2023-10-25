@@ -5,7 +5,6 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     dietary_pref = models.CharField(max_length=255, blank=True, null=True)
     cooking_skill_lvl = models.CharField(max_length=255, blank=True, null=True)
-    is_active = models.BooleanField(default=False)
 
 
     def __str__(self):
