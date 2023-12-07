@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Ingredient, RecipeIngredient, RecipeStep, Recipe
 from drf_writable_nested.serializers import WritableNestedModelSerializer
+from django.db import transaction
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -64,54 +65,56 @@ class RecipeSerializer(WritableNestedModelSerializer):
         def create(self, validated_data):
             ingredients_data = validated_data.pop('ingredients', [])
             steps_data = validated_data.pop('steps', [])
-        
-            recipe = Recipe.objects.create(**validated_data)
-        
-            for ingredient_data in ingredients_data:
-                ingredient_data['recipe'] = recipe
-                ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': recipe})
-                if ingredient_serializer.is_valid():
-                    ingredient_serializer.save()
-        
-            for step_data in steps_data:
-                step_data['recipe'] = recipe
-                step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': recipe})
-                if step_serializer.is_valid():
-                    step_serializer.save()
-        
-            return recipe
+
+            with transaction.atomic():
+                recipe = Recipe.objects.create(**validated_data)
+            
+                for ingredient_data in ingredients_data:
+                    ingredient_data['recipe'] = recipe
+                    ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': recipe})
+                    if ingredient_serializer.is_valid():
+                        ingredient_serializer.save()
+            
+                for step_data in steps_data:
+                    step_data['recipe'] = recipe
+                    step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': recipe})
+                    if step_serializer.is_valid():
+                        step_serializer.save()
+            
+                return recipe
     
         def update(self, instance, validated_data):
             ingredients_data = validated_data.pop('ingredients', [])
             steps_data = validated_data.pop('steps', [])
-        
-            instance.title = validated_data.get('title', instance.title)
-            instance.prep_time = validated_data.get('prep_time', instance.prep_time)
-            instance.diff_lvl = validated_data.get('diff_lvl', instance.diff_lvl)
-            instance.title_img = validated_data.get('title_img', instance.title_img)
-            instance.save()
-        
-            for ingredient_data in ingredients_data:
-                ingredient_id = ingredient_data.get('id')
-                if ingredient_id:
-                    ingredient = RecipeIngredient.objects.get(id=ingredient_id, recipe=instance)
-                    ingredient_serializer = RecipeIngredientSerializer(instance=ingredient, data=ingredient_data, context={'recipe': instance}, partial=True)
-                else:
-                    ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': instance})
-                if ingredient_serializer.is_valid():
-                    ingredient_serializer.save()
-        
-            for step_data in steps_data:
-                step_id = step_data.get('id')
-                if step_id:
-                    step = RecipeStep.objects.get(id=step_id, recipe=instance)
-                    step_serializer = RecipeStepSerializer(instance=step, data=step_data, context={'recipe': instance}, partial=True)
-                else:
-                    step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': instance})
-                if step_serializer.is_valid():
-                    step_serializer.save()
-        
-            instance.ingredients.exclude(id__in=[item['id'] for item in ingredients_data if 'id' in item]).delete()
-            instance.steps.exclude(id__in=[item['id'] for item in steps_data if 'id' in item]).delete()
-        
-            return instance
+
+            with transaction.atomic():        
+                instance.title = validated_data.get('title', instance.title)
+                instance.prep_time = validated_data.get('prep_time', instance.prep_time)
+                instance.diff_lvl = validated_data.get('diff_lvl', instance.diff_lvl)
+                instance.title_img = validated_data.get('title_img', instance.title_img)
+                instance.save()
+            
+                for ingredient_data in ingredients_data:
+                    ingredient_id = ingredient_data.get('id')
+                    if ingredient_id:
+                        ingredient = RecipeIngredient.objects.get(id=ingredient_id, recipe=instance)
+                        ingredient_serializer = RecipeIngredientSerializer(instance=ingredient, data=ingredient_data, context={'recipe': instance}, partial=True)
+                    else:
+                        ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': instance})
+                    if ingredient_serializer.is_valid():
+                        ingredient_serializer.save()
+            
+                for step_data in steps_data:
+                    step_id = step_data.get('id')
+                    if step_id:
+                        step = RecipeStep.objects.get(id=step_id, recipe=instance)
+                        step_serializer = RecipeStepSerializer(instance=step, data=step_data, context={'recipe': instance}, partial=True)
+                    else:
+                        step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': instance})
+                    if step_serializer.is_valid():
+                        step_serializer.save()
+            
+                instance.ingredients.exclude(id__in=[item['id'] for item in ingredients_data if 'id' in item]).delete()
+                instance.steps.exclude(id__in=[item['id'] for item in steps_data if 'id' in item]).delete()
+            
+                return instance
