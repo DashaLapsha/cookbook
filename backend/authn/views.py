@@ -15,6 +15,7 @@ class CustomLoginView(DefaultLoginView):
         if response.status_code == 200:
             user = self.user
             user_data = {
+                'id': user.id,
                 'username': user.username,
                 'email': user.email
             }
