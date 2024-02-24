@@ -16,7 +16,7 @@ urlpatterns = [
     re_path(r'^account-confirm-email/(?P<key>[-:\w]+)/$',
          VerifyEmailView.as_view(), name='account_confirm_email'),
          path('resend-email/', ResendEmailVerificationView.as_view(), name="rest_resend_email"),
-    path('user/<str:username>/', UserDetailsView.as_view(), name='user-details'),
+    path('<int:id>/', UserDetailsView.as_view(), name='user-details'),
     path('password-reset/', PasswordResetView.as_view()),
         path('password-reset-confirm/<uidb64>/<token>/',
          PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
