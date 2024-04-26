@@ -1,6 +1,8 @@
-from rest_framework import viewsets, permissions
-from .models import Recipe, Ingredient, RecipeStep, RecipeIngredient
-from .serializers import RecipeSerializer, IngredientSerializer, RecipeStepSerializer, RecipeIngredientSerializer
+from rest_framework import viewsets, permissions, status
+from .models import Recipe
+from .serializers import RecipeSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
 
 class IsRecipeOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -18,7 +20,7 @@ class BaseRecipePermissionViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create']:
             permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ['update', 'partial_update', 'destroy']:
+        if self.action in ['update', 'partial_update', 'destroy']:
             permission_classes = [IsRecipeOwnerOrAdmin]
         else:
             permission_classes = self.permission_classes
@@ -27,15 +29,16 @@ class BaseRecipePermissionViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(BaseRecipePermissionViewSet):
     queryset = Recipe.objects.all().order_by('-id')
     serializer_class = RecipeSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
-class IngredientViewSet(BaseRecipePermissionViewSet):
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
+# class IngredientViewSet(BaseRecipePermissionViewSet):
+#     queryset = Ingredient.objects.all()
+#     serializer_class = IngredientSerializer
 
-class RecipeIngredientViewSet(BaseRecipePermissionViewSet):
-    queryset = RecipeIngredient.objects.all()
-    serializer_class = RecipeIngredientSerializer
+# class RecipeIngredientViewSet(BaseRecipePermissionViewSet):
+#     queryset = RecipeIngredient.objects.all()
+#     serializer_class = RecipeIngredientSerializer
 
-class RecipeStepViewSet(BaseRecipePermissionViewSet):
-    queryset = RecipeStep.objects.all()
-    serializer_class = RecipeStepSerializer
+# class RecipeStepViewSet(BaseRecipePermissionViewSet):
+#     queryset = RecipeStep.objects.all()
+#     serializer_class = RecipeStepSerializer

@@ -1,8 +1,9 @@
 from django.urls import reverse
 from rest_framework import status
 from test_plus.test import APITestCase
-from .factories import UserFactory, IngredientFactory, RecipeIngredientFactory, RecipeStepFactory, RecipeFactory
-from .models import RecipeIngredient, RecipeStep, Ingredient, Recipe
+import unittest
+from ..factories import UserFactory, IngredientFactory, RecipeIngredientFactory, RecipeStepFactory, RecipeFactory
+from ..models import RecipeIngredient, RecipeStep, Ingredient, Recipe
 
 class RecipeTestCase(APITestCase):
     def setUp(self):
@@ -28,9 +29,7 @@ class RecipeTestCase(APITestCase):
             "diff_lvl": "Easy",
             "ingredients": [
                 {
-                    "ingredient": {
-                        "ingredient_name": "Test Ingredient"
-                    },
+                    "ingredient_name": "Test Ingredient",
                     "amount": 1,
                     "measure": "cup"
                 }
@@ -72,9 +71,7 @@ class RecipeTestCase(APITestCase):
             "ingredients": [
                 {
                     "id": self.recipe_ingredient.id,
-                    "ingredient": {
-                        "ingredient_name": "Test Ingredient 2"
-                    },
+                    "ingredient": "Test Ingredient 2",
                     "amount": 100,
                     "measure": "g"
                 }

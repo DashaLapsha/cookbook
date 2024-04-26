@@ -3,6 +3,15 @@ from .models import CustomUser
 from .serializers import UserSerializer, UserOwnerSerializer
 from rest_framework.response import Response
 from dj_rest_auth.views import LoginView as DefaultLoginView
+from dj_rest_auth.views import LogoutView as DefaultLogoutView
+from rest_framework.views import APIView
+from django.middleware.csrf import get_token
+from rest_framework.permissions import IsAuthenticated
+
+class CSRFTokenView(APIView):
+    def get(self, request, *args, **kwargs):
+        csrf_token = get_token(request)
+        return Response({'csrfToken': csrf_token})
 
 class UserDetailsView(RetrieveUpdateAPIView):
     queryset = CustomUser.objects.all()
@@ -16,8 +25,6 @@ class UserDetailsView(RetrieveUpdateAPIView):
             return UserSerializer
         
     def get(self, request, *args, **kwargs):
-        print(self.request.user.id)
-        print(self.kwargs['id'])
         return super().get(request, *args, **kwargs)
 
 class CustomLoginView(DefaultLoginView):
@@ -32,3 +39,9 @@ class CustomLoginView(DefaultLoginView):
             }
             response.data['user'] = user_data
         return response
+
+class CustomLogoutView(DefaultLogoutView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)

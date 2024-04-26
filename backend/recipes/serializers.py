@@ -6,32 +6,33 @@ from django.db import transaction
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ['id', 'ingredient_name']
+        fields = '__all__'
 
-class RecipeIngredientSerializer(WritableNestedModelSerializer):
-    ingredient = IngredientSerializer()
+class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
+    ingredient = serializers.CharField(source='ingredient_name')
 
     class Meta:
         model = RecipeIngredient
         fields = ['id', 'ingredient', 'amount', 'measure']
-        extra_kwargs = {'recipe': {'required': False}}
+        # extra_kwargs = {'recipe': {'required': False}}
 
     def create(self, validated_data):
-        ingredient_data = validated_data.pop('ingredient')
-        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_data['ingredient_name'].lower())
+        ingredient_name = validated_data.pop('ingredient')['ingredient_name']
+        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_name)
         recipe = self.context['recipe']
         recipe_ingredient = RecipeIngredient.objects.create(ingredient=ingredient, recipe=recipe, **validated_data)
         return recipe_ingredient
-    
+
     def update(self, instance, validated_data):
-        ingredient_data = validated_data.pop('ingredient')
-        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_data['ingredient_name'].lower())
+        ingredient_name = validated_data.pop('ingredient')['ingredient_name']
+        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_name)
         instance.ingredient = ingredient
         instance.amount = validated_data.get('amount', instance.amount)
         instance.measure = validated_data.get('measure', instance.measure)
         instance.save()
         return instance
+
 
 class RecipeStepSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
@@ -39,7 +40,7 @@ class RecipeStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeStep
         fields = ['id', 'step_number', 'description', 'step_img']
-        extra_kwargs = {'recipe': {'required': False}}
+        # extra_kwargs = {'recipe': {'required': False}}
 
     def create(self, validated_data):
         recipe = self.context['recipe']

@@ -51,20 +51,21 @@ class UserLogoutTestCase(APITestCase):
         response = self.client.post(reverse('logout'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+
 class UserDetailsTestCase(APITestCase):
     def setUp(self):
         self.user = UserFactory()
 
     def test_can_retrieve_user_details(self):
         self.client.login(username=self.user.username, password="password")
-        url = reverse('user-details', kwargs={'username': self.user.username})
+        url = reverse('user-details', kwargs={'id': self.user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], self.user.username)
 
     def test_can_update_user_details(self):
         self.client.login(username=self.user.username, password="password")
-        url = reverse('user-details', kwargs={'username': self.user.username})
+        url = reverse('user-details', kwargs={'id': self.user.id})
         data = {"email": "newemail@example.com"}
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

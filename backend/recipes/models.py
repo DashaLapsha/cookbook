@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 
 class Ingredient(models.Model):
-    ingredient_name = models.CharField(max_length=100)
+    ingredient_name = models.CharField(max_length=100, primary_key=True)
 
     def __str__(self):
         return self.ingredient_name
@@ -16,7 +16,7 @@ class UnwantedIngredient(models.Model):
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE)
     amount = models.PositiveIntegerField()
     measure = models.CharField(max_length=50)
 

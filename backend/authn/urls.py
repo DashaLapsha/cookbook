@@ -1,13 +1,13 @@
 from django.urls import path, re_path, include
 from dj_rest_auth.registration.views import RegisterView, VerifyEmailView, ConfirmEmailView, ResendEmailVerificationView
-from dj_rest_auth.views import LoginView, LogoutView, PasswordResetConfirmView, PasswordResetView
-from .views import UserDetailsView, CustomLoginView
+from dj_rest_auth.views import PasswordResetConfirmView, PasswordResetView
+from .views import UserDetailsView, CustomLoginView, CustomLogoutView, CSRFTokenView
 
 urlpatterns = [
     path('account-confirm-email/<str:key>/', ConfirmEmailView.as_view()),
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', CustomLoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
+    path('logout/', CustomLogoutView.as_view(), name='logout'),
 
     path('verify-email/',
          VerifyEmailView.as_view(), name='rest_verify_email'),
@@ -22,4 +22,5 @@ urlpatterns = [
          PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
          
     path('', include('dj_rest_auth.urls')), 
+    path('csrf/', CSRFTokenView.as_view(), name='csrf_token'),
 ]
