@@ -6,12 +6,14 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 import re
 from allauth.account.models import EmailAddress
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class UserRegistrationTestCase(APITestCase):
     def test_user_can_register(self):
-        data = {"username": "testuser", "email": "test@example.com", "password1": "testing*", "password2": "testing*"}
-        response = self.client.post(reverse('register'), data)
+        image = SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg")
+        data = {"username": "testuser", "email": "test@example.com", "password1": "testing*", "password2": "testing*", "profile_img": image}
+        response = self.client.post(reverse('register'), data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(len(mail.outbox), 1)
 
@@ -26,6 +28,7 @@ class UserRegistrationTestCase(APITestCase):
         user = get_user_model().objects.get(username="testuser")
         email_address = user.emailaddress_set.get(email="test@example.com")
         self.assertTrue(email_address.verified)
+        self.assertEqual(user.profile_img, image)
 
 
 class UserLoginTestCase(APITestCase):
