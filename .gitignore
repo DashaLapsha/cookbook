@@ -2,3 +2,4 @@
 *.code-workspace
 venv/
 __pycache__
+backend/backend/__pycache__
