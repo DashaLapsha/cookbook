@@ -4,6 +4,7 @@ from test_plus.test import APITestCase
 import unittest
 from ..factories import UserFactory, IngredientFactory, RecipeIngredientFactory, RecipeStepFactory, RecipeFactory
 from ..models import RecipeIngredient, RecipeStep, Ingredient, Recipe
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class RecipeTestCase(APITestCase):
     def setUp(self):
@@ -23,8 +24,11 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_recipe(self):
+        title_img = SimpleUploadedFile("title_img.jpg", b"file_content", content_type="image/jpeg")
+        step_img = SimpleUploadedFile("step_img.jpg", b"file_content", content_type="image/jpeg")
         data = {
             "title": "Test Recipe",
+            "title_img": title_img,
             "prep_time": 30,
             "diff_lvl": "Easy",
             "ingredients": [
@@ -37,7 +41,8 @@ class RecipeTestCase(APITestCase):
             "steps": [
                 {
                     "step_number": 1,
-                    "description": "Test Step"
+                    "description": "Test Step",
+                    "step_img": step_img
                 }
             ]
         }

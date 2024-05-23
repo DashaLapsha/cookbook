@@ -4,9 +4,6 @@ from .views import RecipeViewSet
 
 router = DefaultRouter()
 router.register(r'recipes', RecipeViewSet, basename='recipe')
-# router.register(r'ingredients', IngredientViewSet, basename='ingredient')
-# router.register(r'recipe-ingredients', RecipeIngredientViewSet, basename='recipeingredient')
-# router.register(r'recipe-steps', RecipeStepViewSet, basename='recipestep')
 
 urlpatterns = [
     path('', include(router.urls)),

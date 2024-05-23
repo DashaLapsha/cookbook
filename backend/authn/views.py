@@ -20,7 +20,6 @@ class CustomRegisterView(DefaultRegisterView):
         user = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
-        # Handle profile image upload
         profile_img = request.FILES.get('profile_img', None)
         if profile_img:
             user.profile_img = profile_img
