@@ -1,18 +1,35 @@
 from django.urls import reverse
 from rest_framework import status
 from test_plus.test import APITestCase
-import unittest
-from ..factories import UserFactory, IngredientFactory, RecipeIngredientFactory, RecipeStepFactory, RecipeFactory
-from ..models import RecipeIngredient, RecipeStep, Ingredient, Recipe
+from ..factories import UserFactory, IngredientFactory, RecipeIngredientFactory, RecipeStepFactory, RecipeFactory, create_image
+from ..models import Recipe, Ingredient, RecipeIngredient, RecipeStep
 from django.core.files.uploadedfile import SimpleUploadedFile
+import base64
 
 class RecipeTestCase(APITestCase):
     def setUp(self):
         self.user = UserFactory()
-        self.recipe = RecipeFactory(user=self.user)
-        self.ingredient = IngredientFactory()
-        self.recipe_ingredient = RecipeIngredientFactory(recipe=self.recipe, ingredient=self.ingredient)
-        self.recipe_step = RecipeStepFactory(recipe=self.recipe)
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse('recipe-list')
+
+        base64_string = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAUA"
+            "AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO"
+            "9TXL0Y4OHwAAAABJRU5ErkJggg=="
+        )   
+        self.image_content = base64.b64decode(base64_string)
+
+        self.title_image = SimpleUploadedFile(
+            name='title_image.jpeg',
+            content=self.image_content,
+            content_type='image/jpeg'
+        )
+        
+        self.step_image = SimpleUploadedFile(
+            name='step_image.jpeg',
+            content=self.image_content,
+            content_type='image/jpeg'
+        )
 
     def test_list_recipe(self):
         url = reverse('recipe-list')
@@ -20,80 +37,95 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_detail_recipe(self):
-        response = self.client.get(reverse('recipe-detail', kwargs={'pk': self.recipe.pk}))
+        recipe = RecipeFactory(user=self.user)
+        response = self.client.get(reverse('recipe-detail', kwargs={'pk': recipe.pk}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_create_recipe(self):
-        title_img = SimpleUploadedFile("title_img.jpg", b"file_content", content_type="image/jpeg")
-        step_img = SimpleUploadedFile("step_img.jpg", b"file_content", content_type="image/jpeg")
+    def test_create_recipe(self):     
         data = {
-            "title": "Test Recipe",
-            "title_img": title_img,
-            "prep_time": 30,
-            "diff_lvl": "Easy",
-            "ingredients": [
-                {
-                    "ingredient_name": "Test Ingredient",
-                    "amount": 1,
-                    "measure": "cup"
-                }
-            ],
-            "steps": [
-                {
-                    "step_number": 1,
-                    "description": "Test Step",
-                    "step_img": step_img
-                }
-            ]
+            'title': 'Receive until stop what look hit expect.',
+            'prep_time': 76,
+            'diff_lvl': 'Easy',
+            'title_img': self.title_image,
+            'ingredients[0]ingredient_name': 'today',
+            'ingredients[0]amount': 100,
+            'ingredients[0]measure': 'grams',
+            'ingredients[1]ingredient_name': 'discussion',
+            'ingredients[1]amount': 2,
+            'ingredients[1]measure': 'cups',
+            'ingredients[2]ingredient_name': 'group',
+            'ingredients[2]amount': 1,
+            'ingredients[2]measure': 'teaspoon',
+            'steps[0]step_number': 1,
+            'steps[0]description': 'Step 1: Prepare ingredients',
+            'steps[0]step_img': self.step_image,
+            'steps[1]step_number': 2,
+            'steps[1]description': 'Step 2: Cook for 30 minutes',
+            'steps[2]step_number': 3,
+            'steps[2]description': 'Step 3: Serve hot',
         }
-        self.client.force_authenticate(user=self.user)
-        response = self.client.post(reverse('recipe-list'), data, format='json')
-        self.assertContains(response, 'id', status_code=status.HTTP_201_CREATED)
-        
-        # Check if recipe is created
-        self.assertEqual(Recipe.objects.count(), 2)
-        self.assertEqual(Recipe.objects.all()[1].title, "Test Recipe")
-    
-        # Check if ingredient is created
-        self.assertEqual(Ingredient.objects.count(), 2)
-        self.assertEqual(Ingredient.objects.all()[1].ingredient_name, "test ingredient")
-    
-        # Check if recipe ingredient is created
-        self.assertEqual(RecipeIngredient.objects.count(), 2)
-        self.assertEqual(RecipeIngredient.objects.all()[1].amount, 1)
-        self.assertEqual(RecipeIngredient.objects.all()[1].measure, "cup")
-    
-        # Check if step is created
-        self.assertEqual(RecipeStep.objects.count(), 2)
-        self.assertEqual(RecipeStep.objects.all()[1].step_number, 1)
-        self.assertEqual(RecipeStep.objects.all()[1].description, "Test Step")
-    
+
+        response = self.client.post(self.url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify creation of recipe
+        self.assertEqual(Recipe.objects.count(), 1)
+        created_recipe = Recipe.objects.first()
+        self.assertEqual(created_recipe.title, 'Receive until stop what look hit expect.')
+
+        # Verify creation of ingredients
+        self.assertEqual(RecipeIngredient.objects.count(), 3)  # Adjust based on actual number of ingredients created
+        self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='today').amount, 100)
+        self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='discussion').amount, 2)
+        self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='group').amount, 1)
+
+        # Verify creation of steps
+        self.assertEqual(RecipeStep.objects.count(), 3)  # Adjust based on actual number of steps created
+        self.assertEqual(RecipeStep.objects.get(step_number=1).description, 'Step 1: Prepare ingredients')
+        self.assertEqual(RecipeStep.objects.get(step_number=2).description, 'Step 2: Cook for 30 minutes')
+        self.assertEqual(RecipeStep.objects.get(step_number=3).description, 'Step 3: Serve hot')
+
+
     def test_update_recipe(self):
+        recipe = RecipeFactory(user=self.user)
+        ingredient = IngredientFactory(ingredient_name='pressure')
+        recipe_ingredient = RecipeIngredientFactory(recipe=recipe, ingredient=ingredient)
+        recipe_step = RecipeStepFactory(recipe=recipe)
+
         data = {
-            "title": "Test Recipe 2",
-            "prep_time": 15,
-            "diff_lvl": "Intermediate",
-            "ingredients": [
-                {
-                    "id": self.recipe_ingredient.id,
-                    "ingredient": "Test Ingredient 2",
-                    "amount": 100,
-                    "measure": "g"
-                }
-            ],
-            "steps": [
-                {
-                    "id": self.recipe_step.id,
-                    "step_number": 1,
-                    "description": "Test Step"
-                },
-                {
-                    "step_number": 2,
-                    "description": "Test Step 2"
-                }
-            ]
+            'title': 'Updated Recipe',
+            'prep_time': 45,
+            'diff_lvl': 'Intermediate',
+            'title_img': self.title_image,
+            'ingredients[0]id': recipe_ingredient.id,
+            'ingredients[0]ingredient_name': 'Updated Ingredient',
+            'ingredients[0]amount': 2,
+            'ingredients[0]measure': 'cups',
+            'steps[0]id': recipe_step.id,
+            'steps[0]step_number': 1,
+            'steps[0]description': 'Updated Step',
+            'steps[0]step_img': self.step_image,
+            'steps[1]step_number': 2,
+            'steps[1]description': 'New Step',
         }
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(reverse('recipe-detail', kwargs={'pk': self.recipe.pk}), data, format='json')
+
+        response = self.client.patch(reverse('recipe-detail', kwargs={'pk': recipe.pk}), data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], data['title'])
+
+        # Verify updated recipe
+        updated_recipe = Recipe.objects.get(pk=recipe.pk)
+        self.assertEqual(updated_recipe.title, 'Updated Recipe')
+        self.assertEqual(updated_recipe.prep_time, 45)
+        self.assertEqual(updated_recipe.diff_lvl, 'Intermediate')
+
+        # Verify updated recipe ingredient
+        updated_recipe_ingredient = RecipeIngredient.objects.get(pk=recipe_ingredient.pk)
+        self.assertEqual(updated_recipe_ingredient.amount, 2)
+        self.assertEqual(updated_recipe_ingredient.measure, 'cups')
+
+        # Verify updated step and new step creation
+        updated_step = RecipeStep.objects.get(pk=recipe_step.pk)
+        self.assertEqual(updated_step.description, 'Updated Step')
+
+        new_step = RecipeStep.objects.get(recipe=updated_recipe, step_number=2)
+        self.assertEqual(new_step.description, 'New Step')
