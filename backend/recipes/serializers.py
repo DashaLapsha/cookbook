@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from .models import Ingredient, RecipeIngredient, RecipeStep, Recipe
-from drf_writable_nested.serializers import WritableNestedModelSerializer
 from django.db import transaction
+from .models import Recipe, RecipeIngredient, RecipeStep, Ingredient
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,24 +8,24 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    ingredient = serializers.CharField()
-    extra_kwargs = {'recipe': {'required': False}}
+    id = serializers.IntegerField(required=False)
+    ingredient_name = serializers.CharField()
 
     class Meta:
         model = RecipeIngredient
-        fields = '__all__'
+        fields = ['id', 'ingredient_name', 'amount', 'measure']
+        extra_kwargs = {'recipe': {'required': False}}
 
     def create(self, validated_data):
-        print(f"Creating RecipeIngredient with data: {validated_data}")
-        ingredient_name = validated_data.pop('ingredient')
-        ingredient, created = Ingredient.objects.get_or_create(ingredient_name=ingredient_name)
+        ingredient_name = validated_data.pop('ingredient_name')
+        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_name.lower())
         recipe = self.context['recipe']
         recipe_ingredient = RecipeIngredient.objects.create(ingredient=ingredient, recipe=recipe, **validated_data)
         return recipe_ingredient
 
     def update(self, instance, validated_data):
-        ingredient_name = validated_data.pop('ingredient')
-        ingredient, created = Ingredient.objects.get_or_create(ingredient_name=ingredient_name)
+        ingredient_name = validated_data.pop('ingredient_name')
+        ingredient, _ = Ingredient.objects.get_or_create(ingredient_name=ingredient_name.lower())
         instance.ingredient = ingredient
         instance.amount = validated_data.get('amount', instance.amount)
         instance.measure = validated_data.get('measure', instance.measure)
@@ -39,7 +38,7 @@ class RecipeStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeStep
         fields = ['id', 'step_number', 'description', 'step_img']
-        # extra_kwargs = {'recipe': {'required': False}}
+        extra_kwargs = {'recipe': {'required': False}}
 
     def create(self, validated_data):
         recipe = self.context['recipe']
@@ -53,7 +52,7 @@ class RecipeStepSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-class RecipeSerializer(WritableNestedModelSerializer):
+class RecipeSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     ingredients = RecipeIngredientSerializer(many=True)
     steps = RecipeStepSerializer(many=True)
@@ -63,30 +62,27 @@ class RecipeSerializer(WritableNestedModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
-        print(f"Creating with data: {validated_data}")
         ingredients_data = validated_data.pop('ingredients', [])
         steps_data = validated_data.pop('steps', [])
-        
+        print(f"Validated data: {validated_data}")
+
         with transaction.atomic():
             recipe = Recipe.objects.create(**validated_data)
-            
+
             for ingredient_data in ingredients_data:
                 ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': recipe})
-                if ingredient_serializer.is_valid():
-                    ingredient_serializer.save()
-                else:
-                    raise serializers.ValidationError(ingredient_serializer.errors)
+                ingredient_serializer.is_valid(raise_exception=True)
+                ingredient_serializer.save()
 
             for step_data in steps_data:
                 step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': recipe})
-                if step_serializer.is_valid():
-                    step_serializer.save()
-                else:
-                    raise serializers.ValidationError(step_serializer.errors)
+                step_serializer.is_valid(raise_exception=True)
+                step_serializer.save()
 
             return recipe
 
     def update(self, instance, validated_data):
+        print(validated_data)
         ingredients_data = validated_data.pop('ingredients', [])
         steps_data = validated_data.pop('steps', [])
 
@@ -96,8 +92,8 @@ class RecipeSerializer(WritableNestedModelSerializer):
             instance.diff_lvl = validated_data.get('diff_lvl', instance.diff_lvl)
             instance.title_img = validated_data.get('title_img', instance.title_img)
             instance.save()
-            
-            # Update ingredients
+
+            # Handle ingredients
             for ingredient_data in ingredients_data:
                 ingredient_id = ingredient_data.get('id')
                 if ingredient_id:
@@ -105,12 +101,10 @@ class RecipeSerializer(WritableNestedModelSerializer):
                     ingredient_serializer = RecipeIngredientSerializer(instance=ingredient_instance, data=ingredient_data, context={'recipe': instance}, partial=True)
                 else:
                     ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': instance})
-                if ingredient_serializer.is_valid():
-                    ingredient_serializer.save()
-                else:
-                    raise serializers.ValidationError(ingredient_serializer.errors)
-            
-            # Update steps
+                ingredient_serializer.is_valid(raise_exception=True)
+                ingredient_serializer.save()
+
+            # Handle steps
             for step_data in steps_data:
                 step_id = step_data.get('id')
                 if step_id:
@@ -118,13 +112,10 @@ class RecipeSerializer(WritableNestedModelSerializer):
                     step_serializer = RecipeStepSerializer(instance=step_instance, data=step_data, context={'recipe': instance}, partial=True)
                 else:
                     step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': instance})
-                if step_serializer.is_valid():
-                    step_serializer.save()
-                else:
-                    raise serializers.ValidationError(step_serializer.errors)
-            
-            # Remove any ingredients and steps not included in the update
+                step_serializer.is_valid(raise_exception=True)
+                step_serializer.save()
+
             instance.ingredients.exclude(id__in=[item['id'] for item in ingredients_data if 'id' in item]).delete()
             instance.steps.exclude(id__in=[item['id'] for item in steps_data if 'id' in item]).delete()
-            
+
             return instance
