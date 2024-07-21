@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
 from .models import Recipe, RecipeIngredient, RecipeStep, Ingredient
+from django.db.models import Q
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,11 +10,12 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
-    ingredient_name = serializers.CharField()
+    ingredient = serializers.CharField(required=False)
+    ingredient_name = serializers.CharField(required=False)
 
     class Meta:
         model = RecipeIngredient
-        fields = ['id', 'ingredient_name', 'amount', 'measure']
+        fields = ['id', 'ingredient', 'ingredient_name', 'amount', 'measure']
         extra_kwargs = {'recipe': {'required': False}}
 
     def create(self, validated_data):
@@ -54,12 +56,13 @@ class RecipeStepSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user_id = serializers.ReadOnlyField(source='user.id')
     ingredients = RecipeIngredientSerializer(many=True)
     steps = RecipeStepSerializer(many=True)
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = ['id', 'user', 'title', 'prep_time', 'diff_lvl', 'title_img', 'user_id', 'ingredients', 'steps']
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients', [])
@@ -82,7 +85,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             return recipe
 
     def update(self, instance, validated_data):
-        print(validated_data)
         ingredients_data = validated_data.pop('ingredients', [])
         steps_data = validated_data.pop('steps', [])
 
@@ -94,28 +96,46 @@ class RecipeSerializer(serializers.ModelSerializer):
             instance.save()
 
             # Handle ingredients
+            existing_ingredient_ids = set(RecipeIngredient.objects.filter(recipe=instance).values_list('id', flat=True))
+            incoming_ingredient_ids = set()
+
             for ingredient_data in ingredients_data:
                 ingredient_id = ingredient_data.get('id')
                 if ingredient_id:
                     ingredient_instance = RecipeIngredient.objects.get(id=ingredient_id, recipe=instance)
                     ingredient_serializer = RecipeIngredientSerializer(instance=ingredient_instance, data=ingredient_data, context={'recipe': instance}, partial=True)
+                    incoming_ingredient_ids.add(ingredient_id)
                 else:
                     ingredient_serializer = RecipeIngredientSerializer(data=ingredient_data, context={'recipe': instance})
                 ingredient_serializer.is_valid(raise_exception=True)
                 ingredient_serializer.save()
 
+            # Delete ingredients that are not in the incoming data
+            ingredients_to_delete = existing_ingredient_ids - incoming_ingredient_ids
+            if ingredients_to_delete:
+                RecipeIngredient.objects.filter(id__in=ingredients_to_delete, recipe=instance).delete()
+
             # Handle steps
+            existing_step_ids = set(RecipeStep.objects.filter(recipe=instance).values_list('id', flat=True))
+            incoming_step_ids = set()
+
             for step_data in steps_data:
                 step_id = step_data.get('id')
                 if step_id:
                     step_instance = RecipeStep.objects.get(id=step_id, recipe=instance)
                     step_serializer = RecipeStepSerializer(instance=step_instance, data=step_data, context={'recipe': instance}, partial=True)
+                    incoming_step_ids.add(step_id)
                 else:
                     step_serializer = RecipeStepSerializer(data=step_data, context={'recipe': instance})
                 step_serializer.is_valid(raise_exception=True)
                 step_serializer.save()
 
-            instance.ingredients.exclude(id__in=[item['id'] for item in ingredients_data if 'id' in item]).delete()
-            instance.steps.exclude(id__in=[item['id'] for item in steps_data if 'id' in item]).delete()
+            # Delete steps that are not in the incoming data
+            steps_to_delete = existing_step_ids - incoming_step_ids
+            if steps_to_delete:
+                RecipeStep.objects.filter(id__in=steps_to_delete, recipe=instance).delete()
+
+            instance.save()
 
             return instance
+
