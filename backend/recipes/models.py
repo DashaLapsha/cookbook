@@ -33,7 +33,7 @@ class Recipe(models.Model):
         ('Difficult', 'Difficult'),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recipes')
     title = models.CharField(max_length=100)
     prep_time = models.PositiveIntegerField()
     diff_lvl = models.CharField(max_length=15, choices=DIFFICULTY_CHOICES)

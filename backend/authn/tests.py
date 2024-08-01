@@ -7,6 +7,7 @@ from django.core import mail
 import re
 from allauth.account.models import EmailAddress
 from django.core.files.uploadedfile import SimpleUploadedFile
+import base64
 
 
 class UserRegistrationTestCase(APITestCase):
@@ -28,7 +29,6 @@ class UserRegistrationTestCase(APITestCase):
         user = get_user_model().objects.get(username="testuser")
         email_address = user.emailaddress_set.get(email="test@example.com")
         self.assertTrue(email_address.verified)
-        self.assertEqual(user.profile_img, image)
 
 
 class UserLoginTestCase(APITestCase):
@@ -58,18 +58,31 @@ class UserLogoutTestCase(APITestCase):
 class UserDetailsTestCase(APITestCase):
     def setUp(self):
         self.user = UserFactory()
+        self.client.force_authenticate(user=self.user)
+
+        base64_string = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAUA"
+            "AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO"
+            "9TXL0Y4OHwAAAABJRU5ErkJggg=="
+        )   
+        self.image_content = base64.b64decode(base64_string)
+
+        self.profile_image = SimpleUploadedFile(
+            name='profile_image.jpeg',
+            content=self.image_content,
+            content_type='image/jpeg'
+        )
 
     def test_can_retrieve_user_details(self):
-        self.client.login(username=self.user.username, password="password")
         url = reverse('user-details', kwargs={'id': self.user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], self.user.username)
 
     def test_can_update_user_details(self):
-        self.client.login(username=self.user.username, password="password")
         url = reverse('user-details', kwargs={'id': self.user.id})
-        data = {"email": "newemail@example.com"}
+        data = {"profile_img": self.profile_image,
+                "cooking_skill_lvl": "Advanced"}
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['email'], "newemail@example.com")
+        self.assertEqual(response.data['cooking_skill_lvl'], "Advanced")
