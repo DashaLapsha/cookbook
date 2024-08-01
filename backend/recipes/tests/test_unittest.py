@@ -74,13 +74,13 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(created_recipe.title, 'Receive until stop what look hit expect.')
 
         # Verify creation of ingredients
-        self.assertEqual(RecipeIngredient.objects.count(), 3)  # Adjust based on actual number of ingredients created
+        self.assertEqual(RecipeIngredient.objects.count(), 3)
         self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='today').amount, 100)
         self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='discussion').amount, 2)
         self.assertEqual(RecipeIngredient.objects.get(ingredient__ingredient_name='group').amount, 1)
 
         # Verify creation of steps
-        self.assertEqual(RecipeStep.objects.count(), 3)  # Adjust based on actual number of steps created
+        self.assertEqual(RecipeStep.objects.count(), 3)
         self.assertEqual(RecipeStep.objects.get(step_number=1).description, 'Step 1: Prepare ingredients')
         self.assertEqual(RecipeStep.objects.get(step_number=2).description, 'Step 2: Cook for 30 minutes')
         self.assertEqual(RecipeStep.objects.get(step_number=3).description, 'Step 3: Serve hot')
