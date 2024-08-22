@@ -14,6 +14,15 @@ from rest_framework import status
 
 User = get_user_model()
 
+class CheckSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return Response({"message": "Session is valid"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Session has expired"}, status=status.HTTP_401_UNAUTHORIZED)
+
 class CustomRegisterView(DefaultRegisterView):
     parser_classes = [MultiPartParser]
 

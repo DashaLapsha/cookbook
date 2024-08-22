@@ -1,9 +1,10 @@
 from django.urls import path, re_path, include
 from dj_rest_auth.registration.views import VerifyEmailView, ConfirmEmailView, ResendEmailVerificationView
 from dj_rest_auth.views import PasswordResetConfirmView, PasswordResetView
-from .views import UserDetailsView, CustomLoginView, CustomLogoutView, CSRFTokenView, CustomRegisterView
+from .views import UserDetailsView, CustomLoginView, CustomLogoutView, CSRFTokenView, CustomRegisterView, CheckSessionView
 
 urlpatterns = [
+    path('session-check/', CheckSessionView.as_view(), name='check-session'),
     path('account-confirm-email/<str:key>/', ConfirmEmailView.as_view()),
     path('register/', CustomRegisterView.as_view(), name='register'),
     path('login/', CustomLoginView.as_view(), name='login'),
