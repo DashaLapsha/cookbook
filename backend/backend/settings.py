@@ -3,6 +3,7 @@ from pathlib import Path
 import environ
 import os
 import tempfile
+from django.conf import settings
 
 env = environ.Env()
 environ.Env.read_env()
@@ -13,7 +14,7 @@ SECRET_KEY = env("SECRET_KEY")
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -36,7 +37,8 @@ INSTALLED_APPS = [
     'corsheaders',
     "debug_toolbar",
     'authn',
-    'recipes'
+    'recipes',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -96,10 +98,10 @@ CSRF_TRUSTED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'cookbook', 
+        'NAME': env("DATABASE_NAME"), 
         'USER': env("DATABASE_USER"),
         'PASSWORD': env("DATABASE_PASS"),
-        'HOST': '127.0.0.1', 
+        'HOST': env("DATABASE_HOST"), 
         'PORT': '5432',
     }}
 
@@ -131,14 +133,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-
-STATIC_URL = 'static/'
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT=os.path.join(BASE_DIR,"media/")
-
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -157,7 +151,7 @@ AUTHENTICATION_BACKENDS = [
 
 SITE_ID = 1
 
-SESSION_COOKIE_AGE = 60
+SESSION_COOKIE_AGE = 7200
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 LOGIN_ON_EMAIL_CONFIRMATION = True
@@ -176,3 +170,28 @@ EMAIL_HOST_USER = 'fubsk4@gmail.com'
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
  
+
+#  AWS S3 Settings 
+
+from decouple import config
+
+# AWS Credentials
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_LOCATION = 'media'
+
+# Static files (CSS, JavaScript, etc.)
+STATIC_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/static/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# Media files (uploads)
+MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{AWS_LOCATION}/'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
