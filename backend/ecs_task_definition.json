@@ -1,0 +1,122 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:904233103499:task-definition/cooking_legacy_task_def:11",
+    "containerDefinitions": [
+        {
+            "name": "cookinglegacy_container",
+            "image": "lapsha27/cooking_legacy_rep:latest",
+            "cpu": 256,
+            "memory": 512,
+            "memoryReservation": 256,
+            "portMappings": [
+                {
+                    "name": "cookinglegacy_container-80-tcp",
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "DATABASE_NAME",
+                    "value": "cooking_legacy_RDS_DB"
+                },
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "AKIA5FCD6GCF5AH4UJ5A"
+                },
+                {
+                    "name": "DATABASE_HOST",
+                    "value": "cooking-legacy-database.cx66kqka8ekt.eu-north-1.rds.amazonaws.com"
+                },
+                {
+                    "name": "AWS_S3_REGION_NAME",
+                    "value": "eu-north-1"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "nUS0U6gi0qrBDLDasNW6GVs7Eq3uEwSp8Ujo0cV7"
+                },
+                {
+                    "name": "EMAIL_HOST_PASSWORD",
+                    "value": "wprepkohgimkrqsn"
+                },
+                {
+                    "name": "DATABASE_PASS",
+                    "value": "TgDbHDX57TzY55jGaW5P"
+                },
+                {
+                    "name": "AWS_STORAGE_BUCKET_NAME",
+                    "value": "cooking-legacy-media"
+                },
+                {
+                    "name": "DATABASE_USER",
+                    "value": "postgres_admin"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/cooking_legacy_task_def",
+                    "mode": "non-blocking",
+                    "awslogs-create-group": "true",
+                    "max-buffer-size": "25m",
+                    "awslogs-region": "eu-north-1",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "cooking_legacy_task_def",
+    "executionRoleArn": "arn:aws:iam::904233103499:role/ecsTaskExecutionRole",
+    "networkMode": "bridge",
+    "revision": 11,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.28"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2"
+    ],
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "cpu": "256",
+    "memory": "512",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2024-09-09T17:50:18.768Z",
+    "registeredBy": "arn:aws:iam::904233103499:root",
+    "tags": []
+}
