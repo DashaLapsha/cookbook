@@ -9,10 +9,8 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
-  CONTAINER_NAME: cookinglegacy_container 
+  CONTAINER_NAME: cookinglegacy_container
   DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/cooking_legacy_rep
-  TASK_FAMILY_NAME: ${{ secrets.TASK_FAMILY_NAME }}
-  ECS_TASK_DEFINITION: ./backend/ecs_task_definition.json
 
 jobs:
   build_and_deploy:
@@ -46,14 +44,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
+      - name: Retrieve current task definition
+        id: current-task-def
+        run: |
+          TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services ${{ env.SERVICE_NAME }} \
+            --query "services[0].taskDefinition" \
+            --output text)
+          echo "TASK_DEFINITION=${TASK_DEFINITION}" >> $GITHUB_ENV
+
+      - name: Get task definition JSON
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION }} \
+            --query 'taskDefinition' \
+            > current-task-definition.json
+
+      - name: Fill in the new image ID in the task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          task-definition: current-task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
-  
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
