@@ -44,7 +44,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -88,10 +88,10 @@ SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_DOMAIN = '16.170.15.37'
 
-CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS').split(', ')
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_DOMAIN = '16.170.15.37'
+# CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS').split(', ')
+# CSRF_COOKIE_SAMESITE = 'None'
+# CSRF_COOKIE_SECURE = False
+# CSRF_COOKIE_DOMAIN = '16.170.15.37'
 
 
 # Database
